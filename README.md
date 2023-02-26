@@ -1,47 +1,119 @@
 # iExpense
 
 ```swift
-
-struct SecondView: View {
-    @Environment(\.dismiss) var dismiss
-    
-    let name: String
-    
-    var body: some View {
-        Button("Dismiss") {
-            dismiss()
-        }
-    }
-}
-
 struct ContentView: View {
-    @State private var numbers = [Int]()
-    @State private var currentNumber = 1
+    @StateObject var expenses = Expenses()
+    @State private var showingAddExpense = false
     
     var body: some View {
         NavigationView {
-            VStack {
-                List {
-                    ForEach(numbers, id: \.self) {
-                        Text("Row \($0)")
+            List {
+                ForEach(expenses.items) { item in
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text(item.name)
+                                .font(.headline)
+                            Text(item.type)
+                        }
+                        
+                        Spacer()
+                        
+                        Text(item.amount, format: .currency(code: "USD"))
                     }
-                    .onDelete(perform: removeRows)
+                    Text(item.name)
                 }
-                
-                Button("Add Number") {
-                    numbers.append(currentNumber)
-                    currentNumber += 1
+                .onDelete(perform: removeItems)
+            }
+            .navigationTitle("iExpense")
+            .toolbar {
+                Button {
+                    showingAddExpense = true
+                } label: {
+                     Image(systemName: "plus")
                 }
             }
-            .navigationTitle("onDelete()")
-            .toolbar {
-                EditButton()
+            .sheet(isPresented: $showingAddExpense) {
+                AddView(expenses: expenses)
             }
         }
     }
     
-    func removeRows(at offsets: IndexSet) {
-        numbers.remove(atOffsets: offsets)
+    func removeItems(at offsets: IndexSet) {
+        expenses.items.remove(atOffsets: offsets)
     }
 }
 ```
+
+```swift
+import SwiftUI
+
+struct AddView: View {
+    @ObservedObject var expenses: Expenses
+    @Environment(\.dismiss) var dismiss
+    
+    @State private var name = ""
+    @State private var type = "Personal"
+    @State private var amount = 0.0
+    
+    let types = ["Businesss", "Personal"]
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                TextField("Name", text: $name)
+                
+                Picker("Type", selection: $type) {
+                    ForEach(types, id: \.self) {
+                        Text($0)
+                    }
+                }
+                
+                TextField("Amount", value: $amount, format: .currency(code: "USD"))
+                    .keyboardType(.decimalPad)
+            }
+            .navigationTitle("Add new expense")
+            .toolbar {
+                Button("Save") {
+                    let item = ExpenseItem(name: name, type: type, amount: amount)
+                    expenses.items.append(item)
+                    dismiss()
+                }
+            }
+        }
+    }
+}
+
+struct AddView_Previews: PreviewProvider {
+    static var previews: some View {
+        AddView(expenses: Expenses())
+    }
+}
+
+```
+
+```swift
+import Foundation
+
+class Expenses: ObservableObject {
+    @Published var items = [ExpenseItem]() {
+        didSet {
+            if let encoded = try? JSONEncoder().encode(items) {
+                UserDefaults.standard.set(encoded, forKey: "Items")
+            }
+        }
+    }
+    
+    init() {
+        if let savedItems = UserDefaults.standard.data(forKey: "Items") {
+            if let decodedItems = try? JSONDecoder().decode([ExpenseItem].self, from: savedItems) {
+                items = decodedItems
+                return
+            }
+        }
+        
+        items = []
+    }
+}
+
+```
+
