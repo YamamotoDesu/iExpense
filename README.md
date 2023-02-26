@@ -1,5 +1,9 @@
 # iExpense
 
+<img width="514" alt="スクリーンショット 2023-02-26 22 17 14" src="https://user-images.githubusercontent.com/47273077/221412712-ef65c2fa-959b-4942-8c6a-081d62526459.png">
+
+<img width="514" alt="スクリーンショット 2023-02-26 22 17 32" src="https://user-images.githubusercontent.com/47273077/221412723-76417c1d-eec9-4ba5-b6e5-1421373fc854.png">
+
 ```swift
 struct ContentView: View {
     @StateObject var expenses = Expenses()
